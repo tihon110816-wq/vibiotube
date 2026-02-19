@@ -806,4 +806,20 @@ body {
     background: #cc0000;
 }
 
+.share-section {
+    margin-bottom: 20px;
+}
+
+.share-section h3 {
+    font-size: 18px;
+    margin-bottom: 10px;
+}
+
+.share-section p {
+    color: #aaa;
+    font-size: 14px;
+    margin-bottom: 15px;
+}
+
+
 

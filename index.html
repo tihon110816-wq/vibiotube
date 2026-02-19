@@ -24,6 +24,7 @@
         </div>
         <div class="header-right">
             <button class="icon-btn" onclick="openUploadModal()">📹 Загрузить</button>
+            <button class="icon-btn" onclick="openShareModal()">📤 Поделиться</button>
             <button class="icon-btn">🔔</button>
             <button class="icon-btn" onclick="openAuthModal()" id="userBtn">👤 Войти</button>
         </div>
@@ -155,6 +156,39 @@
         </div>
     </div>
 
+    <!-- Модальное окно экспорта/импорта -->
+    <div class="modal" id="shareModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Поделиться видео</h2>
+                <button class="close-modal" onclick="closeShareModal()">×</button>
+            </div>
+            <div class="modal-body">
+                <div class="share-section">
+                    <h3>📤 Экспорт видео</h3>
+                    <p>Скачайте файл с вашими видео и отправьте другим пользователям</p>
+                    <button class="btn-primary" onclick="exportVideos()">Скачать все видео</button>
+                </div>
+                <hr style="margin: 30px 0; border-color: #303030;">
+                <div class="share-section">
+                    <h3>📥 Импорт видео</h3>
+                    <p>Загрузите файл с видео от других пользователей</p>
+                    <input type="file" id="importFile" accept=".json" style="display: none;" onchange="importVideos(event)">
+                    <button class="btn-primary" onclick="document.getElementById('importFile').click()">Загрузить файл</button>
+                </div>
+                <hr style="margin: 30px 0; border-color: #303030;">
+                <div class="share-section">
+                    <h3>☁️ Облачное хранилище</h3>
+                    <p>Синхронизируйте видео через Firebase (все пользователи увидят)</p>
+                    <div id="firebaseStatus" style="margin: 15px 0; padding: 10px; background: #272727; border-radius: 8px;">
+                        <span id="syncStatus">🔴 Не подключено</span>
+                    </div>
+                    <button class="btn-primary" onclick="syncWithFirebase()" id="syncBtn">Включить синхронизацию</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- Модальное окно авторизации -->
     <div class="modal" id="authModal">
         <div class="modal-content">
@@ -227,5 +261,8 @@
     </div>
 
     <script src="script.js"></script>
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-database-compat.js"></script>
 </body>
 </html>

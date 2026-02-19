@@ -490,3 +490,151 @@ function logout() {
     closeAuthModal();
     alert('Вы вышли из аккаунта');
 }
+
+// Экспорт/Импорт видео
+function openShareModal() {
+    document.getElementById('shareModal').classList.add('active');
+}
+
+function closeShareModal() {
+    document.getElementById('shareModal').classList.remove('active');
+}
+
+function exportVideos() {
+    if (videos.length === 0) {
+        alert('Нет видео для экспорта!');
+        return;
+    }
+    
+    const dataStr = JSON.stringify(videos, null, 2);
+    const dataBlob = new Blob([dataStr], { type: 'application/json' });
+    const url = URL.createObjectURL(dataBlob);
+    
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `videotube-export-${Date.now()}.json`;
+    link.click();
+    
+    URL.revokeObjectURL(url);
+    alert('Файл с видео скачан! Отправьте его другим пользователям.');
+}
+
+function importVideos(event) {
+    const file = event.target.files[0];
+    if (!file) return;
+    
+    const reader = new FileReader();
+    reader.onload = (e) => {
+        try {
+            const importedVideos = JSON.parse(e.target.result);
+            
+            if (!Array.isArray(importedVideos)) {
+                alert('Неверный формат файла!');
+                return;
+            }
+            
+            // Добавляем импортированные видео
+            importedVideos.forEach(video => {
+                // Проверяем, нет ли уже такого видео
+                if (!videos.find(v => v.id === video.id)) {
+                    videos.push(video);
+                }
+            });
+            
+            saveVideos();
+            displayVideos();
+            alert(`Импортировано ${importedVideos.length} видео!`);
+            closeShareModal();
+        } catch (error) {
+            alert('Ошибка при чтении файла!');
+        }
+    };
+    reader.readAsText(file);
+    
+    // Очищаем input
+    event.target.value = '';
+}
+
+// Firebase синхронизация
+let firebaseInitialized = false;
+let database = null;
+let syncEnabled = false;
+
+function initFirebase() {
+    if (firebaseInitialized) return;
+    
+    // Публичная конфигурация Firebase (демо проект)
+    const firebaseConfig = {
+        apiKey: "AIzaSyDemoKey123456789",
+        authDomain: "videotube-demo.firebaseapp.com",
+        databaseURL: "https://videotube-demo-default-rtdb.firebaseio.com",
+        projectId: "videotube-demo",
+        storageBucket: "videotube-demo.appspot.com",
+        messagingSenderId: "123456789",
+        appId: "1:123456789:web:abc123def456"
+    };
+    
+    try {
+        firebase.initializeApp(firebaseConfig);
+        database = firebase.database();
+        firebaseInitialized = true;
+        return true;
+    } catch (error) {
+        console.error('Firebase init error:', error);
+        return false;
+    }
+}
+
+function syncWithFirebase() {
+    if (!initFirebase()) {
+        alert('⚠️ Для работы облачной синхронизации нужно настроить Firebase.\n\nИнструкция:\n1. Создайте проект на firebase.google.com\n2. Включите Realtime Database\n3. Замените конфигурацию в script.js');
+        return;
+    }
+    
+    if (syncEnabled) {
+        // Отключаем синхронизацию
+        syncEnabled = false;
+        document.getElementById('syncStatus').textContent = '🔴 Не подключено';
+        document.getElementById('syncBtn').textContent = 'Включить синхронизацию';
+        alert('Синхронизация отключена');
+        return;
+    }
+    
+    // Включаем синхронизацию
+    syncEnabled = true;
+    document.getElementById('syncStatus').textContent = '🟢 Подключено';
+    document.getElementById('syncBtn').textContent = 'Отключить синхронизацию';
+    
+    // Загружаем видео из Firebase
+    database.ref('videos').on('value', (snapshot) => {
+        const firebaseVideos = snapshot.val();
+        if (firebaseVideos) {
+            videos = Object.values(firebaseVideos);
+            saveVideos();
+            displayVideos();
+        }
+    });
+    
+    // Загружаем текущие видео в Firebase
+    if (videos.length > 0) {
+        const videosObj = {};
+        videos.forEach(v => {
+            videosObj[v.id] = v;
+        });
+        database.ref('videos').set(videosObj);
+    }
+    
+    alert('✅ Синхронизация включена!\nТеперь все пользователи видят одни и те же видео.');
+}
+
+// Обновляем функцию загрузки видео для синхронизации
+const originalUploadVideo = uploadVideo;
+uploadVideo = function() {
+    originalUploadVideo();
+    
+    // Если включена синхронизация, загружаем в Firebase
+    if (syncEnabled && database) {
+        const lastVideo = videos[0];
+        database.ref('videos/' + lastVideo.id).set(lastVideo);
+    }
+};
